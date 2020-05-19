@@ -1,0 +1,21 @@
+/* Note: these colors must match the ones defined in RichTestEditor.js */
+span.mark-red {background-color:red;}
+span.mark-fuchsia {background-color:fuchsia;}
+span.mark-lime {background-color:lime;}
+span.mark-yellow {background-color:yellow;}
+span.mark-aqua {background-color:aqua;}
+span.mark-burlywood {background-color:burlywood;}
+span.mark-chocolate {background-color:chocolate;}
+span.mark-darkkhaki {background-color:darkkhaki;}
+span.mark-goldenrod {background-color:goldenrod;}
+span.mark-khaki {background-color:khaki;}
+div.embeddings {min-height: 83px;}
+div.slot {
+    width:150px;
+    min-height:100px;
+    background-color:red;
+    border:1px solid black;
+    overflow:auto;
+    text-align:center;
+    display:inline-block;
+}

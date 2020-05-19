@@ -19,7 +19,7 @@ export default {
    * // or passing objects as attributes
    * scripts: [ { href: '/style.css', someattr: 'value' }, ... ]
    */
-  styles: [],
+  styles: ['editorstyles.css'],
 
   /**
    * Add custom badge naming strategy
