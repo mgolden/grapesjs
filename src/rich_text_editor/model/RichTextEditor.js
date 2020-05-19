@@ -19,6 +19,33 @@ const isValidAnchor = rte => {
     (nextSibling && nextSibling.nodeName == 'A')
   );
 };
+const isValidMark = rte => {
+  let sel = rte.selection();
+  const anchorNode = sel.anchorNode;
+  const focusNode = sel.focusNode;
+  // console.log("selection, anchorNode, focusNode are");
+  // console.log(rte.selection());
+  // console.log(anchorNode);
+  // console.log(focusNode);
+  const res = anchorNode === focusNode;
+  // console.log(`isValidMark returns ${res}`);
+  return res;
+};
+const markStyleSheetId = 'mark-style-sheet';
+const markColors = [
+  'red',
+  'fuchsia',
+  'lime',
+  'yellow',
+  'aqua',
+  'burlywood',
+  'chocolate',
+  'darkkhaki',
+  'goldenrod',
+  'khaki'
+];
+let nMarkColors = markColors.length;
+let markColorCounter = 0;
 const defActions = {
   bold: {
     name: 'bold',
@@ -64,6 +91,26 @@ const defActions = {
       } else {
         rte.insertHTML(`<a class="link" href="">${rte.selection()}</a>`);
       }
+    }
+  },
+  mark: {
+    icon: `<b>M</b>`,
+    name: 'mark',
+    attributes: {
+      title: 'Mark'
+    },
+    result: rte => {
+      if (!isValidMark(rte)) {
+        alert(
+          "Entire selection must be in one string. Do not select across elements or other marks. (When selecting, don't end on the edge of another mark.)"
+        );
+        return;
+      }
+      let color = markColors[markColorCounter];
+      let spanHTML = `<span class="mark mark-${color}" data-name="">${rte.selection()}</span>`;
+      // console.log(spanHTML);
+      rte.insertHTML(spanHTML);
+      markColorCounter = (markColorCounter + 1) % nMarkColors;
     }
   }
 };
@@ -120,6 +167,8 @@ export default class RichTextEditor {
       actions.forEach(action => this.addAction(action));
     }
 
+    // Note: styleWithCSS is mostly useless because the editor removes
+    // element-level attributes when the item is deselected
     settings.styleWithCSS && this.exec('styleWithCSS');
     this.syncActions();
 
@@ -272,7 +321,8 @@ export default class RichTextEditor {
    * @param  {any} [value=null Command's arguments
    */
   exec(command, value = null) {
-    this.doc.execCommand(command, false, value);
+    let res = this.doc.execCommand(command, false, value);
+    // console.log(`${res} = this.doc.execCommand('${command}', false, '${value}')`);
   }
 
   /**
