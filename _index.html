@@ -118,39 +118,36 @@
             editor.DomComponents.addType('clEmbedding', {
                 isComponent: el => {
                     retval = (el.tagName === "DIV" && hasClass(el, "slot_component"))
-                    if(el.tagName === "DIV") {console.log("clEmbedding"); console.log(el); console.log(el.className); console.log(retval);}
                     return(retval);
                 },
                 model: {
                     defaults: {
-                        draggable: 'div.embeddings',
-                        droppable: false
+                        droppable: false,
+                        draggable: "div.embeddings"
                     }
                 }
             });
             editor.DomComponents.addType('clSlot', {
                 isComponent: el => {
                     retval = (el.tagName === "DIV" && hasClass(el, "slot"));
-                    if(el.tagName === "DIV") {console.log("clSlot"); console.log(el); console.log(el.className); console.log(retval);}
                     return(retval);
                 },
                 model: {
                     defaults: {
-                        droppable: 'div.slot_component',
-                        draggable: true
+                        droppable: true,
+                        draggable: 'div.slot_component'
                     }
                 }
             });
             editor.DomComponents.addType('clSlotBot', {
                 isComponent: el => {
                     retval = (el.tagName === "DIV" && hasClass(el, "embeddings"));
-                    if(el.tagName === "DIV") {console.log("clSlotBot"); console.log(el); console.log(el.className); console.log(retval);}
                     return(retval);
                 },
                 model: {
                     defaults: {
-                        droppable: 'div.slot_component',
-                        draggable: true
+                        droppable: true,
+                        draggable: 'div.slot_component'
                     }
                 }
             });
