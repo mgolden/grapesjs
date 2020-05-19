@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>GrapesJS</title>
+    <link rel="stylesheet" href="dist/css/grapes.min.css">
+    <script src="dist/grapes.min.js"></script>
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+        }
+        /* Let's highlight canvas boundaries */
+        #gjs {
+            border: 3px solid #444;
+        }
+        /* Reset some default styling */
+        .gjs-cv-canvas {
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .gjs-block {
+            width: auto;
+            height: auto;
+            min-height: auto;
+        }
+        .panel__top {
+            padding: 0;
+            width: 100%;
+            display: flex;
+            position: initial;
+            justify-content: center;
+            justify-content: space-between;
+        }
+        .panel__basic-actions {
+            position: initial;
+        }
+        .editor-row {
+            display: flex;
+            justify-content: flex-start;
+            align-items: stretch;
+            flex-wrap: nowrap;
+            height: 300px;
+        }
+
+        .editor-canvas {
+            flex-grow: 1;
+        }
+
+        .panel__right {
+            flex-basis: 230px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .panel__switcher {
+            position: initial;
+        }
+        
+        .panel__devices {
+            position: initial;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="panel__top">
+        <div class="panel__basic-actions"></div>
+        <div class="panel__devices"></div>
+        <div class="panel__switcher"></div>
+    </div>
+    <div class="editor-row">
+        <div class="editor-canvas">
+            <div id="gjs">
+            </div>
+        </div>
+        <div class="panel__right">
+            <div class="layers-container"></div>
+            <div class="styles-container"></div>
+            <div class="traits-container"></div>
+        </div>
+    </div>
+    <div id="blocks"></div>
+    <script language="javascript">
+        const backendBase = "https://cl.localhost/grapesjs/"
+        const queryString = new URLSearchParams(window.location.search);
+        let comp = queryString.get("comp");
+        const prob = queryString.get("prob");
+        if(!comp && !prob) {
+            comp = "input";
+        }
+        let lang = queryString.get("lang");
+        if(!lang) {
+            lang = "en";
+        }
+        let urlGetHtml = "";
+        if(prob) {
+            urlGetHtml = backendBase + "problem/" + prob + "/" + lang;
+            
+        }
+        else {
+            urlGetHtml = backendBase + "component/" + comp + "/" + lang;
+            urlGetList = backendBase + "list";
+        }
+
+        const hasClass = (el, c) => {
+            const cs = el.className;
+            if(!cs) {
+                return false;
+            }
+            const s = new Set(cs.split(" "));
+            return s.has(c);
+        };
+
+        const clComponentTypes = editor => {
+            editor.DomComponents.addType('clEmbedding', {
+                isComponent: el => {
+                    retval = (el.tagName === "DIV" && hasClass(el, "slot_component"))
+                    if(el.tagName === "DIV") {console.log("clEmbedding"); console.log(el); console.log(el.className); console.log(retval);}
+                    return(retval);
+                },
+                model: {
+                    defaults: {
+                        draggable: 'div.embeddings',
+                        droppable: false
+                    }
+                }
+            });
+            editor.DomComponents.addType('clSlot', {
+                isComponent: el => {
+                    retval = (el.tagName === "DIV" && hasClass(el, "slot"));
+                    if(el.tagName === "DIV") {console.log("clSlot"); console.log(el); console.log(el.className); console.log(retval);}
+                    return(retval);
+                },
+                model: {
+                    defaults: {
+                        droppable: 'div.slot_component',
+                        draggable: true
+                    }
+                }
+            });
+            editor.DomComponents.addType('clSlotBot', {
+                isComponent: el => {
+                    retval = (el.tagName === "DIV" && hasClass(el, "embeddings"));
+                    if(el.tagName === "DIV") {console.log("clSlotBot"); console.log(el); console.log(el.className); console.log(retval);}
+                    return(retval);
+                },
+                model: {
+                    defaults: {
+                        droppable: 'div.slot_component',
+                        draggable: true
+                    }
+                }
+            });
+        };
+        const editor = grapesjs.init({
+            // Indicate where to init the editor. You can also pass an HTMLElement
+            container: '#gjs',
+            // Get the content for the canvas directly from the element
+            // As an alternative we could use: `components: '<h1>Hello World Component!</h1>'`,
+            fromElement: true,
+            // Size of the editor
+            height: '300px',
+            width: 'auto',
+            plugins: [ clComponentTypes ],
+            blockManager: {
+                appendTo: '#blocks',
+            },
+            layerManager: {
+                appendTo: '.layers-container'
+            },
+            // The Selector Manager allows to assign classes and
+            // different states (eg. :hover) on components.
+            // Generally, it's used in conjunction with Style Manager
+            // but it's not mandatory
+            selectorManager: {
+                appendTo: '.styles-container'
+            },
+            styleManager: {
+                appendTo: '.styles-container',
+                sectors: [
+                    {
+                        name: 'Dimension',
+                        open: false,
+                        // Use built-in properties
+                        buildProps: ['width', 'min-height', 'padding'],
+                        // Use `properties` to define/override single property
+                        properties: [
+                            {
+                                // Type of the input,
+                                // options: integer | radio | select | color | slider | file | composite | stack
+                                type: 'integer',
+                                name: 'The width', // Label for the property
+                                property: 'width', // CSS property (if buildProps contains it will be extended)
+                                units: ['px', '%'], // Units, available only for 'integer' types
+                                defaults: 'auto', // Default value
+                                min: 0, // Min value, available only for 'integer' types
+                            }
+                        ]
+                    },
+                    {
+                        name: 'Extra',
+                        open: false,
+                        buildProps: ['background-color', 'box-shadow', 'custom-prop'],
+                        properties: [
+                            {
+                                id: 'custom-prop',
+                                name: 'Custom Label',
+                                property: 'font-size',
+                                type: 'select',
+                                defaults: '32px',
+                                // List of options, available only for 'select' and 'radio'  types
+                                options: [
+                                    { value: '12px', name: 'Tiny' },
+                                    { value: '18px', name: 'Medium' },
+                                    { value: '32px', name: 'Big' },
+                                ],
+                            }
+                        ]
+                    }
+                ]
+            },
+            traitManager: {
+                appendTo: '.traits-container'
+            },
+            deviceManager: {
+                devices: [{
+                    name: 'Desktop',
+                    width: '', // default size
+                }, {
+                    name: 'Mobile',
+                    width: '320px', // this value will be used on canvas width
+                    widthMedia: '480px', // this value will be used in CSS @media
+                }, {
+                    name: 'Mobile Landscape',
+                    width: '768px', // this value will be used on canvas width
+                    widthMedia: '800px', // this value will be used in CSS @media
+                }]
+            },
+            storageManager: {
+                type: 'remote',
+                autosave: false,
+                urlStore: urlGetHtml,
+                urlLoad: urlGetHtml,
+                params: {}, // Custom parameters to pass with the remote storage request, eg. CSRF token
+                headers: {}, // Custom headers for the remote storage request
+            },
+            // We define a default panel as a sidebar to contain layers
+            panels: {
+                defaults: [
+                    {
+                        id: 'layers',
+                        el: '.panel__right',
+                        // Make the panel resizable
+                        resizable: {
+                            maxDim: 350,
+                            minDim: 200,
+                            tc: 0, // Top handler
+                            cl: 1, // Left handler
+                            cr: 0, // Right handler
+                            bc: 0, // Bottom handler
+                            // Being a flex child we need to change `flex-basis` property
+                            // instead of the `width` (default)
+                            keyWidth: 'flex-basis',
+                        },
+                    },
+                    {
+                        id: 'panel-switcher',
+                        el: '.panel__switcher',
+                        buttons: [{
+                            id: 'show-layers',
+                            active: true,
+                            label: 'Layers',
+                            command: 'show-layers',
+                            // Once activated disable the possibility to turn it off
+                            togglable: false,
+                        }, {
+                            id: 'show-style',
+                            active: true,
+                            label: 'Styles',
+                            command: 'show-styles',
+                            togglable: false,
+                        }, {
+                            id: 'show-traits',
+                            active: true,
+                            label: 'Traits',
+                            command: 'show-traits',
+                            togglable: false,
+                        }],
+                    },
+                    {
+                        id: 'panel-devices',
+                        el: '.panel__devices',
+                        buttons: [{
+                            id: 'device-desktop',
+                            label: 'D',
+                            command: 'set-device-desktop',
+                            active: true,
+                            togglable: false,
+                        }, {
+                            id: 'device-mobile',
+                            label: 'M',
+                            command: 'set-device-mobile',
+                            togglable: false,
+                        }, {
+                            id: 'device-mobile-landscape',
+                            label: 'ML',
+                            command: 'set-device-mobile-landscape',
+                            togglable: false,
+                        }],
+                    }
+                ]
+            }
+        });
+
+        // Define commands
+        editor.Commands.add('show-layers', {
+            getRowEl(editor) { return editor.getContainer().closest('.editor-row'); },
+            getLayersEl(row) { return row.querySelector('.layers-container') },
+
+            run(editor, sender) {
+                const lmEl = this.getLayersEl(this.getRowEl(editor));
+                lmEl.style.display = '';
+            },
+            stop(editor, sender) {
+                const lmEl = this.getLayersEl(this.getRowEl(editor));
+                lmEl.style.display = 'none';
+            },
+        });
+        editor.Commands.add('show-styles', {
+            getRowEl(editor) { return editor.getContainer().closest('.editor-row'); },
+            getStyleEl(row) { return row.querySelector('.styles-container') },
+
+            run(editor, sender) {
+                const smEl = this.getStyleEl(this.getRowEl(editor));
+                smEl.style.display = '';
+            },
+            stop(editor, sender) {
+                const smEl = this.getStyleEl(this.getRowEl(editor));
+                smEl.style.display = 'none';
+            },
+        });
+        editor.Commands.add('show-traits', {
+            getTraitsEl(editor) {
+                const row = editor.getContainer().closest('.editor-row');
+                return row.querySelector('.traits-container');
+            },
+            run(editor, sender) {
+                this.getTraitsEl(editor).style.display = '';
+            },
+            stop(editor, sender) {
+                this.getTraitsEl(editor).style.display = 'none';
+            },
+        });
+        editor.Commands.add('set-device-desktop', {
+            run: editor => editor.setDevice('Desktop')
+        });
+        editor.Commands.add('set-device-mobile', {
+            run: editor => editor.setDevice('Mobile')
+        });
+        editor.Commands.add('set-device-mobile-landscape', {
+            run: editor => editor.setDevice('Mobile Landscape')
+        });
+        editor.Commands.add('store-data', {
+            run(editor) {
+                editor.store();
+            }
+        });
+        
+        editor.Panels.addPanel({
+            id: 'panel-top',
+            el: '.panel__top',
+        });
+        editor.Panels.addPanel({
+            id: 'basic-actions',
+            el: '.panel__basic-actions',
+            buttons: [
+                {
+                    id: 'visibility',
+                    active: true, // active by default
+                    className: 'btn-toggle-borders',
+                    label: '<u>B</u>',
+                    command: 'sw-visibility', // Built-in command
+                }, {
+                    id: 'export',
+                    className: 'btn-open-export',
+                    label: 'Exp',
+                    command: 'export-template',
+                    context: 'export-template', // For grouping context of buttons from the same panel
+                }, {
+                    id: 'show-json',
+                    className: 'btn-show-json',
+                    label: 'JSON',
+                    context: 'show-json',
+                    command(ed) {
+                        let ttt = JSON.stringify(ed.getComponents());
+                        ed.Modal.setTitle('Components JSON').setContent('<textarea style="width:100%; height: 250px;">' + ttt + '</textarea>').open();
+                    }
+                }, {
+                    id: 'save',
+                    classname: 'btn-save',
+                    label: "Save",
+                    command: "store-data"
+                }
+            ],
+        });
+
+        // Add blocks
+        
+        const simpleCategory = {id: "simple", label: "Simple"};
+        const componentCategory = {id: "components", label: "Components"};
+
+        const blockManager = editor.BlockManager;
+        blockManager.add('mstring', {
+            type: 'text',
+            label: 'MString',
+            content: '<span data-gjs-type="text">Lorem ipsum dolor sit amet</span>',
+            category: simpleCategory,
+            activate: true,
+        });
+
+        blockManager.add('image', {
+            label: 'Image',
+            category: simpleCategory,
+            // Select the component once it's dropped
+            select: true,
+            // You can pass components as a JSON instead of a simple HTML string,
+            // in this case we also use a defined component type `image`
+            content: { type: 'image' },
+            // This triggers `active` event on dropped components and the `image`
+            // reacts by opening the AssetManager
+            activate: true,
+        });
+        
+        // reworked from gjs-basic-blocks
+        const stylePrefix = 'gjs-';
+        const basicStyle = true;
+        const rowHeight = 75;
+
+        const styleClm30 = '.' + stylePrefix + 'cell30{width: 30%;}';
+        const styleClm70 = '.' + stylePrefix + 'cell70{width: 70%;}';
+
+        const step = 0.2;
+        const minDim = 1;
+        const currentUnit = 1;
+        const resizerBtm = {
+            tl: 0,
+            tc: 0,
+            tr: 0,
+            cl: 0,
+            cr: 0,
+            bl: 0,
+            br: 0,
+            minDim
+        };
+        const resizerRight = {
+            ...resizerBtm,
+            cr: 1,
+            bc: 0,
+            currentUnit,
+            minDim,
+            step
+        };
+
+        const rowAttr = {
+            'data-gjs-name': 'Row'
+        };
+
+        const colAttr = {
+            'data-gjs-name': 'Cell'
+        };
+ 
+        const attrsToString = attrs => {
+            const result = [];
+
+            for (let key in attrs) {
+                let value = attrs[key];
+                const toParse = value instanceof Array || value instanceof Object;
+                value = toParse ? JSON.stringify(value) : value;
+                result.push(key + "='" + value + "'");
+            }
+
+            return result.length ? (' ' + result.join(' ')) : '';
+        };
+
+        let clsRow;
+        let clsCell;
+        for(let flexGrid of [0,1]) {
+            let styleRow;
+            let styleClm;
+            // Need different names and lables for the flex versions
+            let nameEnd;
+            let labelEnd;
+            let widthBasis;
+            if(flexGrid) {
+                clsRow = stylePrefix+ 'flexrow';
+                clsCell = stylePrefix + 'flexcell';
+
+                styleRow = '.' + clsRow + '{display: flex; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap; padding: 10px;}\n' + 
+                    '@media (max-width: 768px) {.' + clsRow + '{flex-wrap: wrap;}}';
+
+                styleClm = '.' + clsCell + '{min-height: ' + rowHeight + 'px; flex-grow: 1; flex-basis: 100%;}';
+
+                // Flex elements do not react on width style change therefore I use
+                // 'flex-basis' as keyWidth for the resizer on columns
+                resizerRight.keyWidth = 'flex-basis';
+                
+                colAttr['data-gjs-unstylable'] = ['width'];
+                colAttr['data-gjs-stylable-require'] = ['flex-basis'];
+                
+                // Need different names and lables for the flex versions
+                nameEnd = '_flex';
+                labelEnd = ' flex';
+                
+                // width basis
+                widthBasis = 'flex-basis';
+            }
+            else {
+                clsRow = stylePrefix+ 'row';
+                clsCell = stylePrefix + 'cell';
+
+                styleRow = '.' + clsRow + '{display: table; padding: 10px; width: 100%;}' + 
+                    '@media (max-width: 768px) {.' + stylePrefix + 'cell, .' + stylePrefix + 'cell30, .' + stylePrefix + 'cell70 {width: 100%; display: block;}}';
+
+                styleClm = '.' + clsCell + '{width: 8%; display: table-cell; height: ' + rowHeight + 'px;}';
+
+                delete resizerRight.keyWidth;
+                
+                delete colAttr['data-gjs-unstylable'];
+                delete colAttr['data-gjs-stylable-require'];
+                
+                nameEnd = '';
+                labelEnd = '';
+
+                widthBasis = 'width';
+            }
+
+            rowAttr['class'] = clsRow;
+            rowAttr['data-gjs-droppable'] = '.' + clsCell;
+            rowAttr['data-gjs-resizable'] = resizerBtm;
+
+            colAttr['class'] = clsCell;
+            colAttr['data-gjs-draggable'] = '.' + clsRow;
+            colAttr['data-gjs-resizable'] = resizerRight;
+            
+            // Make row and column classes private
+            const privateCls = ['.' + clsRow, '.' + clsCell];
+            editor.on(
+                'selector:add',
+                selector =>
+                    privateCls.indexOf(selector.getFullName()) >= 0 &&
+                    selector.set('private', 1)
+            );
+            
+            const attrsRow = attrsToString(rowAttr);
+            const attrsCell = attrsToString(colAttr);
+            
+            let styleSheet = '';
+            if(basicStyle) {
+                styleSheet = '<style>\n' + styleRow + '\n' + styleClm + '\n</style>';
+            }
+
+            blockManager.add('column1' + nameEnd, {
+                label: 'One Column' + labelEnd,
+                category: simpleCategory,
+                content: '<div ' +  attrsRow + '><div ' + attrsCell + '></div></div>' + styleSheet
+            });
+
+            blockManager.add('column2' + nameEnd, {
+                label: 'Two Column' + labelEnd,
+                category: simpleCategory,
+                content: '<div ' +  attrsRow + '><div ' + attrsCell + '></div><div ' + attrsCell + '></div></div>' + styleSheet
+            });
+
+            blockManager.add('column3' + nameEnd, {
+                label: 'Three Column' + labelEnd,
+                category: simpleCategory,
+                content: '<div ' +  attrsRow + '><div ' + attrsCell + '></div><div ' + attrsCell + '></div><div ' + attrsCell + '></div></div>' + styleSheet
+                });
+
+            if(basicStyle) {
+                styleSheet = '<style>\n' + styleRow + '\n' + styleClm + '\n' + styleClm30 + '\n' + styleClm70 + '\n</style>';
+            }
+            let attrsCell30 = attrsCell + " style='" + widthBasis + ":30%;'";
+            let attrsCell70 = attrsCell + " style='" + widthBasis + ":70%;'";
+            blockManager.add('column3070' + nameEnd, {
+                label: '30-70 Two Column' + labelEnd,
+                category: simpleCategory,
+                content: '<div ' +  attrsRow + '><div ' + attrsCell30 + '></div><div ' + attrsCell70 + '></div></div>' + styleSheet
+            });
+        }
+        
+        // Fetch all the components
+        var oReq = new XMLHttpRequest();
+        oReq.onload = function(e) {
+            for(let comp of oReq.response) {
+                blockManager.add(comp, {
+                    label: comp,
+                    category: componentCategory,
+                    content: {
+                        type: "clEmbedding",
+                        content: '<span class="slot_component" data-component="' + comp + '">' + comp + '</span>'
+                    }
+                });
+            }
+        }
+        oReq.open("GET", urlGetList);
+        oReq.responseType = "json";
+        oReq.send();
+
+    </script>
+</body>
+</html>
