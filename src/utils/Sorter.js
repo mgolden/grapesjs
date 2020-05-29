@@ -40,6 +40,8 @@ export default Backbone.View.extend({
     this.$el = $(this.el);
 
     this.containerSel = o.containerSel || 'div';
+    console.log('this.containerSel is');
+    console.log(this.containerSel);
     this.itemSel = o.itemSel || 'div';
     this.draggable = o.draggable || true;
     this.nested = o.nested || 0;
@@ -67,6 +69,7 @@ export default Backbone.View.extend({
     this.selectOnEnd = !o.avoidSelectOnEnd;
     this.scale = o.scale;
     this.activeTextModel = null;
+    this.logging = false;
 
     if (this.em && this.em.on) {
       this.em.on('change:canvasOffset', this.updateOffset);
@@ -290,6 +293,11 @@ export default Backbone.View.extend({
    * @param {HTMLElement} src
    * */
   startSort(src, opts = {}) {
+    console.log('startSort(');
+    console.log(src);
+    console.log(opts);
+    console.log(')');
+    console.trace('in startSort');
     const em = this.em;
     const itemSel = this.itemSel;
     const contSel = this.containerSel;
@@ -309,6 +317,8 @@ export default Backbone.View.extend({
       src = this.closest(src, itemSel);
     }
 
+    console.log('setting this.eV to');
+    console.log(src);
     this.eV = src;
 
     // Create placeholder if not yet exists
@@ -474,7 +484,7 @@ export default Backbone.View.extend({
       // If there is a significant changes with the pointer
       if (
         !this.lastPos ||
-        (this.lastPos.index != pos.index || this.lastPos.method != pos.method)
+        this.lastPos.index != pos.index || this.lastPos.method != pos.method
       ) {
         this.movePlaceholder(this.plh, dims, pos, this.prevTargetDim);
         if (!this.$plh) this.$plh = $(this.plh);
@@ -590,9 +600,22 @@ export default Backbone.View.extend({
    * @param  {HTMLElement} trg
    * @return {Boolean}
    */
+  consolelog(s) {
+    // if(this.logging) {
+    console.log(s);
+    // }
+  },
   validTarget(trg, src) {
+    this.consolelog('validTarget(');
+    this.consolelog(src);
+    this.consolelog(trg);
+    this.consolelog(')');
     const trgModel = this.getTargetModel(trg);
+    this.consolelog('trgModel is');
+    this.consolelog(trgModel);
     const srcModel = this.getSourceModel(src, { target: trgModel });
+    this.consolelog('srcModel is');
+    this.consolelog(srcModel);
     src = srcModel && srcModel.view && srcModel.view.el;
     trg = trgModel && trgModel.view && trgModel.view.el;
     let result = {
@@ -600,35 +623,57 @@ export default Backbone.View.extend({
       src,
       srcModel,
       trg,
-      trgModel
+      trgModel,
+      draggable: false,
+      dragInfo: false,
+      droppable: false,
+      dropInfo: false
     };
 
     if (!src || !trg) {
       result.valid = false;
+      this.consolelog('no src or trg');
+      this.consolelog('validTarget returns ----');
+      this.consolelog(result);
       return result;
     }
 
     // check if the source is draggable in target
     let draggable = srcModel.get('draggable');
+    this.consolelog('draggable is:');
+    this.consolelog(draggable);
     draggable = draggable instanceof Array ? draggable.join(', ') : draggable;
+    this.consolelog('result.draginfo is:');
+    this.consolelog(draggable);
     result.dragInfo = draggable;
     draggable = isString(draggable) ? this.matches(trg, draggable) : draggable;
+    this.consolelog('result.draggable is:');
+    this.consolelog(draggable);
     result.draggable = draggable;
 
     // Check if the target could accept the source
     let droppable = trgModel.get('droppable');
     droppable = droppable instanceof Backbone.Collection ? 1 : droppable;
+    this.consolelog('dropable is:');
+    this.consolelog(droppable);
     droppable = droppable instanceof Array ? droppable.join(', ') : droppable;
+    this.consolelog('result.dropInfo is:');
+    this.consolelog(droppable);
     result.dropInfo = droppable;
     droppable = isString(droppable) ? this.matches(src, droppable) : droppable;
+    this.consolelog('now dropable is:');
+    this.consolelog(droppable);
     droppable =
       draggable && this.isTextableActive(srcModel, trgModel) ? 1 : droppable;
+    this.consolelog('result.dropable is:');
+    this.consolelog(droppable);
     result.droppable = droppable;
 
     if (!droppable || !draggable) {
       result.valid = false;
     }
-
+    this.consolelog('validTarget returns ----');
+    this.consolelog(result);
     return result;
   },
 
@@ -671,6 +716,7 @@ export default Backbone.View.extend({
       this.targetP = this.closest(target, this.containerSel);
 
       // Check if the source is valid with the target
+      this.consolelog('calling from dimsfromTarget 1');
       let validResult = this.validTarget(target);
       em && em.trigger('sorter:drag:validation', validResult);
 
@@ -698,6 +744,7 @@ export default Backbone.View.extend({
     ) {
       const targetParent = this.targetP;
 
+      this.consolelog('calling from dimsfromTarget 2');
       if (targetParent && this.validTarget(targetParent).valid) {
         dims = this.cacheDimsP;
         this.target = targetParent;
@@ -744,6 +791,7 @@ export default Backbone.View.extend({
 
       // If the current target is not valid (src/trg reasons) try with
       // the parent one (if exists)
+      this.consolelog('calling from getTargetFromEl 1');
       const validResult = this.validTarget(target);
       em && em.trigger('sorter:drag:validation', validResult);
 
@@ -759,6 +807,7 @@ export default Backbone.View.extend({
     if (this.nearElBorders(target)) {
       targetParent = this.closest(target, containerSel);
 
+      this.consolelog('calling from getTargetFromEl 2');
       if (targetParent && this.validTarget(targetParent).valid) {
         target = targetParent;
       }
@@ -1014,6 +1063,9 @@ export default Backbone.View.extend({
    * @return void
    * */
   endMove(e) {
+    console.log('!!!drop!!!');
+    console.log(this);
+    console.log(e);
     const src = this.eV;
     const moved = [];
     const docs = this.getDocuments();
@@ -1077,21 +1129,36 @@ export default Backbone.View.extend({
    * @param {Object} pos Object with position coordinates
    * */
   move(dst, src, pos) {
+    console.log('!!!move(!!!');
+    console.log(dst);
+    console.log(src);
+    console.log(pos);
+    console.log(')');
+    console.log('move');
+    console.log($);
     const { em, activeTextModel, dropContent } = this;
     const srcEl = getElement(src);
     em && em.trigger('component:dragEnd:before', dst, srcEl, pos); // @depricated
     var warns = [];
     var index = pos.indexEl;
     var modelToDrop, modelTemp, created;
+    this.logging = true;
+    this.consolelog('calling from move');
     var validResult = this.validTarget(dst, srcEl);
+    this.logging = false;
     var targetCollection = $(dst).data('collection');
     var model = validResult.srcModel;
     var droppable = validResult.droppable;
+    var wasDroppable = droppable;
     var draggable = validResult.draggable;
     var dropInfo = validResult.dropInfo;
     var dragInfo = validResult.dragInfo;
     const { trgModel } = validResult;
     droppable = trgModel instanceof Backbone.Collection ? 1 : droppable;
+    if (droppable != wasDroppable) {
+      console.log('DROPPABLE CHANGED!');
+      console.log(droppable);
+    }
     const isTextableActive = this.isTextableActive(model, trgModel);
 
     if (targetCollection && droppable && draggable) {
@@ -1137,13 +1204,13 @@ export default Backbone.View.extend({
     } else {
       if (!targetCollection) {
         warns.push('Target collection not found');
-      }
-
-      if (!droppable) {
+      } else if (!droppable) {
         warns.push(`Target is not droppable, accepts [${dropInfo}]`);
       }
 
-      if (!draggable) {
+      if (!validResult.src) {
+        warns.push('Source Component not found');
+      } else if (targetCollection && !draggable) {
         warns.push(`Component not draggable, acceptable by [${dragInfo}]`);
       }
 
@@ -1173,6 +1240,7 @@ export default Backbone.View.extend({
     off(this.getDocuments(), 'keydown', this.rollback);
     const key = e.which || e.keyCode;
 
+    console.log(`rollback! ${key}`);
     if (key == 27) {
       this.moved = 0;
       this.endMove();
