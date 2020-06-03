@@ -5,6 +5,12 @@
     <title>GrapesJS</title>
     <link rel="stylesheet" href="dist/css/grapes.min.css">
     <script src="dist/grapes.min.js"></script>
+    <script src="runtime.js" type="module"></script>
+    <!-- script src="polyfills.js" type="module"></script -->
+    <!-- script src="styles.js" type="module"></script -->
+    <script src="scripts.js" defer></script>
+    <script src="vendor.js" type="module"></script>
+    <script src="main.js" type="module"></script>
     <style>
         body,
         html {
@@ -151,7 +157,31 @@
                     }
                 }
             });
+            editor.DomComponents.addType('latexType', {
+                isComponent: el => el.tagName == 'LATEX-ELEMENT',
+                model: {
+                    defaults: {
+                        traits: [
+                            'math-string'
+                        ],
+                        // As by default, traits are binded to attributes, so to define
+                        // their initial value we can use attributes
+                        attributes: { type: 'text', required: true },
+                    },
+                    // See https://github.com/artf/grapesjs/issues/639
+                    // Odd that there is no way to re-render an element. blockManager.render() does not do it.
+                    updated(property, value, prevValue) {
+                        if(property === "attributes" && value["math-string"] != prevValue["math-string"]) {
+                            const coll = this.collection;
+                            const at = coll.indexOf(this);
+                            coll.remove(this);
+                            coll.add(this, { at });
+                        }
+                    }
+                }
+            });
         };
+
         const editor = grapesjs.init({
             // Indicate where to init the editor. You can also pass an HTMLElement
             container: '#gjs',
@@ -431,6 +461,14 @@
             activate: true,
         });
         
+        blockManager.add('latex', {
+            type: 'latexType',
+            label: 'Latex',
+            content: '<latex-element math-string="\\frac{2x}{3y}"></latex-element>',
+            category: simpleCategory,
+            activate: true,
+        });
+
         // reworked from gjs-basic-blocks
         const stylePrefix = 'gjs-';
         const basicStyle = true;

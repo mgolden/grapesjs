@@ -9,7 +9,14 @@ export default {
    * * // or passing objects as attributes
    * scripts: [ { src: '/file.js', someattr: 'value' }, ... ]
    */
-  scripts: [],
+  scripts: [
+    { src: 'runtime.js', type: 'module' },
+    //    { src: 'polyfills.js', type: 'module' },
+    { src: 'styles.js', type: 'module' }
+    //    { src: 'scripts.js', defer: 'defer' },
+    //    { src: 'vendor.js', type: 'module' },
+    //    { src: 'main.js', type: 'module' }
+  ],
 
   /*
    * Append external styles to the `<head>` of the iframe
