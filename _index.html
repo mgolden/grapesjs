@@ -267,10 +267,10 @@
                 }]
             },
             storageManager: {
-                type: 'remote',
+//                type: 'remote',
                 autosave: false,
-                urlStore: urlGetHtml,
-                urlLoad: urlGetHtml,
+//                urlStore: urlGetHtml,
+//                urlLoad: urlGetHtml,
                 params: {}, // Custom parameters to pass with the remote storage request, eg. CSRF token
                 headers: {}, // Custom headers for the remote storage request
             },
@@ -627,23 +627,23 @@
             });
         }
         
-        // Fetch all the components
-        var oReq = new XMLHttpRequest();
-        oReq.onload = function(e) {
-            for(let comp of oReq.response) {
-                blockManager.add(comp, {
-                    label: comp,
-                    category: componentCategory,
-                    content: {
-                        type: "clEmbedding",
-                        content: '<span class="slot_component" data-component="' + comp + '">' + comp + '</span>'
-                    }
-                });
-            }
-        }
-        oReq.open("GET", urlGetList);
-        oReq.responseType = "json";
-        oReq.send();
+//         // Fetch all the components
+//         var oReq = new XMLHttpRequest();
+//         oReq.onload = function(e) {
+//             for(let comp of oReq.response) {
+//                 blockManager.add(comp, {
+//                     label: comp,
+//                     category: componentCategory,
+//                     content: {
+//                         type: "clEmbedding",
+//                         content: '<span class="slot_component" data-component="' + comp + '">' + comp + '</span>'
+//                     }
+//                 });
+//             }
+//         }
+//         oReq.open("GET", urlGetList);
+//         oReq.responseType = "json";
+//         oReq.send();
 
     </script>
 </body>
